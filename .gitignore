@@ -1,0 +1,50 @@
+
+# ---- Go ----
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test and coverage output
+*.test
+coverage.out
+
+# Build outputs
+/bin/
+/*_output
+
+# Dependency directories
+vendor/
+
+# GoLand / IntelliJ project files
+.idea/
+
+# ---- Shell / script backups ----
+# Temporary or backup shell files
+*~
+*.swp
+*.sh~
+*.sh.bak
+*.orig
+
+# ---- macOS ----
+.DS_Store
+*.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# ---- Editors / IDEs ----
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# ---- Logs and runtime files ----
+*.log
+*.pid
+
+# Local environment files
+.env
+.env.local
+
