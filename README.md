@@ -1,5 +1,3 @@
-go run ./app
-echo is a shell builtin
 # command-shell — Build your own shell in Go
 
 This repository is a hands-on, step-by-step tutorial and implementation workspace for building a full-featured Unix-like shell in Go. The goal is to guide you through progressively implementing parsing, builtins, navigation, quoting, redirection, pipelines, autocompletion, persistent history, and more.
