@@ -68,15 +68,15 @@ Use this as your project plan. Each item is a small, testable milestone.
 
 ### Core shell basics
 
-- [ ] Introduction
-- [ ] Repository Setup
-- [ ] Print a prompt
-- [ ] Handle invalid commands
-- [ ] Implement a REPL
-- [ ] Implement `exit`
-- [ ] Implement `echo`
-- [ ] Implement `type`
-- [ ] Locate executable files (PATH search)
+- [x] Introduction
+- [x] Repository Setup
+- [x] Print a prompt
+- [x] Handle invalid commands
+- [x] Implement a REPL
+- [x] Implement `exit`
+- [x] Implement `echo`
+- [x] Implement `type`
+- [x] Locate executable files (PATH search)
 - [ ] Run a program (spawn external processes)
 
 ### NAVIGATION
