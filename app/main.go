@@ -51,6 +51,10 @@ func (sh *Shell) Run() {
 				args = append(args, "")
 			}
 			sh.handleType(args, true)
+		case "pwd":
+			sh.handlePwd()
+		case "cd":
+			sh.handleCd(args)
 		default:
 			// ensure args[0] is safe to reference
 			if len(args) == 0 {
@@ -85,7 +89,8 @@ func (sh *Shell) handleEcho(args []string) {
 func (sh *Shell) handleType(args []string, onlyCheck bool) {
 	if len(args) > 0 {
 		args[0] = strings.TrimSpace(args[0])
-		if args[0] == "echo" || args[0] == "type" || args[0] == "exit" {
+		// include cd and pwd as shell builtins
+		if args[0] == "echo" || args[0] == "type" || args[0] == "exit" || args[0] == "cd" || args[0] == "pwd" {
 			fmt.Fprint(os.Stdout, args[0]+" is a shell builtin\n")
 			return
 		}
@@ -129,8 +134,8 @@ func (sh *Shell) findCommandInPath(cmd string) (string, bool) {
 	if sh.Path == "" || cmd == "" {
 		return "", false
 	}
-	paths := strings.Split(sh.Path, ":")
-	for _, p := range paths {
+	paths := strings.SplitSeq(sh.Path, ":")
+	for p := range paths {
 		if p == "" {
 			continue
 		}
@@ -152,4 +157,35 @@ func (sh *Shell) handleDefault(line string) {
 	line = line[:len(line)-1]
 	// Simulate command not found
 	fmt.Fprint(os.Stdout, line+": "+"command not found\n")
+}
+
+// New: handlePwd prints current working directory or an error message.
+func (sh *Shell) handlePwd() {
+	pwd, err := os.Getwd()
+	if err == nil {
+		fmt.Fprint(os.Stdout, pwd+"\n")
+	} else {
+		fmt.Fprint(os.Stdout, "error retrieving current directory\n")
+	}
+}
+
+// New: handleCd changes directory and prints errors consistent with previous behavior.
+func (sh *Shell) handleCd(args []string) {
+	if len(args) == 0 {
+		// no argument provided
+		fmt.Fprint(os.Stdout, "cd: : No such file or directory\n")
+		return
+	}
+	if args[0] != "" {
+		if args[0] == "~" {
+			homeDir := os.Getenv("HOME")
+			if err := os.Chdir(homeDir); err != nil {
+				fmt.Fprintf(os.Stdout, "cd: %s: No such file or directory\n", homeDir)
+			}
+			return
+		}
+		if err := os.Chdir(args[0]); err != nil {
+			fmt.Fprintf(os.Stdout, "cd: %s: No such file or directory\n", args[0])
+		}
+	}
 }

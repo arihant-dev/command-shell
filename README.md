@@ -81,10 +81,10 @@ Use this as your project plan. Each item is a small, testable milestone.
 
 ### NAVIGATION
 
-- [ ] The `pwd` builtin
-- [ ] The `cd` builtin: Absolute paths
-- [ ] The `cd` builtin: Relative paths
-- [ ] The `cd` builtin: Home directory (`~`)
+- [x] The `pwd` builtin
+- [x] The `cd` builtin: Absolute paths
+- [x] The `cd` builtin: Relative paths
+- [x] The `cd` builtin: Home directory (`~`)
 
 ### QUOTING
 
