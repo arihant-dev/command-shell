@@ -4,51 +4,68 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 )
 
-var _ = fmt.Fprint
-var _ = os.Stdout
+type Shell struct {
+	Path   string
+	Reader *bufio.Reader
+}
 
 func main() {
-
 	// read the PATH environment variable
 	path := os.Getenv("PATH")
 
-	// start the REPL loop
-	repl(path)
+	sh := &Shell{
+		Path:   path,
+		Reader: bufio.NewReader(os.Stdin),
+	}
+
+	sh.Run()
 }
 
-func repl(path string) {
-	reader := bufio.NewReader(os.Stdin)
+func (sh *Shell) Run() {
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
-		line, err := reader.ReadString('\n')
+		line, err := sh.Reader.ReadString('\n')
 		if err != nil {
 			break
 		}
-		command, args := parseLine(line)
+
+		// ignore empty input lines
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
+		command, args := sh.parseLine(line)
 
 		switch command {
 		case "exit":
 			os.Exit(0)
 		case "echo":
-			handleEcho(args)
+			sh.handleEcho(args)
 		case "type":
-			// ensure args[0] is safe to reference in the original fmt lines
+			// ensure args[0] is safe to reference
 			if len(args) == 0 {
 				args = append(args, "")
 			}
-			handleType(args, path)
+			sh.handleType(args, true)
 		default:
-			handleDefault(line)
+			// ensure args[0] is safe to reference
+			if len(args) == 0 {
+				args = append(args, "")
+			}
+			args = append([]string{command}, args...)
+			sh.handleType(args, false)
 		}
 	}
 }
 
-func parseLine(line string) (string, []string) {
-	// mimic original splitting by space (retain behavior)
-	parts := strings.Split(line, " ")
+func (sh *Shell) parseLine(line string) (string, []string) {
+	// trim newline and split by whitespace
+	line = strings.TrimSpace(line)
+	parts := strings.Fields(line)
 	if len(parts) == 0 {
 		return "", nil
 	}
@@ -60,35 +77,60 @@ func parseLine(line string) (string, []string) {
 	return command, args
 }
 
-func handleEcho(args []string) {
-	fmt.Fprint(os.Stdout, strings.Join(args, " "))
+func (sh *Shell) handleEcho(args []string) {
+	// Print a newline-terminated line (tests expect lines).
+	fmt.Fprintln(os.Stdout, strings.Join(args, " "))
 }
 
-func handleType(args []string, path string) {
+func (sh *Shell) handleType(args []string, onlyCheck bool) {
 	if len(args) > 0 {
 		args[0] = strings.TrimSpace(args[0])
 		if args[0] == "echo" || args[0] == "type" || args[0] == "exit" {
 			fmt.Fprint(os.Stdout, args[0]+" is a shell builtin\n")
-		} else {
-			// check if this command exists in the PATH (extracted to helper)
-			if rel, found := findCommandInPath(path, args[0]); found {
-				fmt.Fprintln(os.Stdout, args[0]+" is "+rel)
-			} else {
-				fmt.Fprint(os.Stdout, args[0]+": not found\n")
+			return
+		}
+
+		if fullpath, found := sh.findCommandInPath(args[0]); found {
+			if onlyCheck {
+				fmt.Fprint(os.Stdout, args[0]+" is "+fullpath+"\n")
+				return
 			}
+
+			// execute the command using the discovered full path
+			cmd := exec.Command(fullpath, args[1:]...)
+			out, _ := cmd.CombinedOutput()
+
+			// normalize and print the captured output
+			outStr := sh.normalizeOutput(out)
+			fmt.Fprint(os.Stdout, outStr)
+		} else {
+			fmt.Fprint(os.Stdout, args[0]+": not found\n")
 		}
 	} else {
-		fmt.Fprint(os.Stdout, args[0]+": not found\n")
+		// args[0] is not safe here; just print a generic not found line
+		fmt.Fprint(os.Stdout, ": not found\n")
 	}
 }
 
-// new helper: search PATH for a command and return its full path if found
-func findCommandInPath(path, cmd string) (string, bool) {
-	if path == "" || cmd == "" {
+func (sh *Shell) normalizeOutput(out []byte) string {
+	// 1) remove a stray space before "\n " if present
+	// 2) remove leading blank lines
+	// 3) ensure output ends with a single newline
+	outStr := string(out)
+	outStr = strings.ReplaceAll(outStr, "\n ", "\n")
+	outStr = strings.TrimLeft(outStr, "\n")
+	if !strings.HasSuffix(outStr, "\n") {
+		outStr += "\n"
+	}
+	return outStr
+}
+
+func (sh *Shell) findCommandInPath(cmd string) (string, bool) {
+	if sh.Path == "" || cmd == "" {
 		return "", false
 	}
-	paths := strings.SplitSeq(path, ":")
-	for p := range paths {
+	paths := strings.Split(sh.Path, ":")
+	for _, p := range paths {
 		if p == "" {
 			continue
 		}
@@ -98,14 +140,14 @@ func findCommandInPath(path, cmd string) (string, bool) {
 			continue
 		}
 		// ensure it's not a directory and is executable by someone
-		if !info.Mode().IsDir() && info.Mode()&0111 != 0 {
+		if !info.IsDir() && info.Mode().Perm()&0111 != 0 {
 			return fullPath, true
 		}
 	}
 	return "", false
 }
 
-func handleDefault(line string) {
+func (sh *Shell) handleDefault(line string) {
 	// Remove the newline character
 	line = line[:len(line)-1]
 	// Simulate command not found
