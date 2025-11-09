@@ -102,16 +102,22 @@ func TestPWD(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// Capture stdout
 			old := os.Stdout
-			r, w, _ := os.Pipe()
+			r, w, err := os.Pipe()
+			if err != nil {
+				t.Fatalf("failed to create pipe: %v", err)
+			}
 			os.Stdout = w
 
 			sh.handlePwd()
 
 			w.Close()
-			os.Stdout = old
+			defer func() { os.Stdout = old }()
 
 			var buf bytes.Buffer
-			io.Copy(&buf, r)
+			_, err = io.Copy(&buf, r)
+			if err != nil {
+				t.Fatalf("failed to read from pipe: %v", err)
+			}
 			result := strings.TrimSpace(buf.String())
 
 			// Verify we got a valid directory path
@@ -144,7 +150,10 @@ func TestCD(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// Capture stdout
 			old := os.Stdout
-			r, w, _ := os.Pipe()
+			r, w, err := os.Pipe()
+			if err != nil {
+				t.Fatalf("failed to create pipe: %v", err)
+			}
 			os.Stdout = w
 
 			// determine home dir portably
@@ -173,10 +182,13 @@ func TestCD(t *testing.T) {
 			}
 
 			w.Close()
-			os.Stdout = old
+			defer func() { os.Stdout = old }()
 
 			var buf bytes.Buffer
-			io.Copy(&buf, r)
+			_, err = io.Copy(&buf, r)
+			if err != nil {
+				t.Fatalf("failed to read from pipe: %v", err)
+			}
 
 			// Take the last non-empty line as the resulting PWD
 			lines := strings.Split(buf.String(), "\n")
