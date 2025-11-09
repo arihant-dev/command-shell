@@ -77,7 +77,7 @@ Use this as your project plan. Each item is a small, testable milestone.
 - [x] Implement `echo`
 - [x] Implement `type`
 - [x] Locate executable files (PATH search)
-- [ ] Run a program (spawn external processes)
+- [x] Run a program (spawn external processes)
 
 ### NAVIGATION
 
